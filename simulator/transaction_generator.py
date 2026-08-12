@@ -5,11 +5,56 @@ from datetime import datetime, timedelta
 
 # Configuration
 
-ACCOUNTS = [f"ACC{number:03d}" for number in range(1, 101)]
+NUM_ACCOUNTS = 100
 
-SHELL_ACCOUNT = "SHELL001"
+NORMAL_TRANSACTION_COUNT = 500
+STARBURST_ACCOUNT_COUNT = 50
+SMURFING_ACCOUNT_COUNT = 30
 
 OUTPUT_FILE = "data/raw/transactions.csv"
+
+COUNTRIES = [
+    "India",
+    "USA",
+    "UK",
+    "Singapore",
+    "UAE"
+]
+
+# Account Profiles
+
+def create_account_profiles():
+
+    accounts = {}
+
+    for number in range(1, NUM_ACCOUNTS + 1):
+
+        account_id = f"ACC{number:03d}"
+
+        accounts[account_id] = {
+            "account_id": account_id,
+            "ip": f"192.168.1.{number}",
+            "country": random.choice(COUNTRIES)
+        }
+
+    return accounts
+
+# Generate Timestamp
+
+def generate_timestamp():
+
+    start_time = datetime.now() - timedelta(days=1)
+
+    random_seconds = random.randint(
+        0,
+        24 * 60 * 60
+    )
+
+    timestamp = start_time + timedelta(
+        seconds=random_seconds
+    )
+
+    return timestamp.isoformat()
 
 # Transaction Generator
 
@@ -17,91 +62,123 @@ def generate_transaction(
     sender,
     receiver,
     amount,
-    transaction_type="NORMAL"
+    transaction_type,
+    accounts
 ):
-    timestamp = datetime.now() - timedelta(
-        seconds=random.randint(0, 3600)
-    )
 
     return {
         "transaction_id": str(uuid.uuid4()),
-        "timestamp": timestamp.isoformat(),
+
+        "timestamp": generate_timestamp(),
+
         "sender": sender,
+
         "receiver": receiver,
+
         "amount": round(amount, 2),
+
         "transaction_type": transaction_type,
-        "sender_ip": f"192.168.1.{random.randint(1, 254)}",
-        "receiver_country": random.choice(
-            ["India", "USA", "UK", "Singapore", "UAE"]
+
+        "sender_ip": accounts[sender]["ip"],
+
+        "sender_country": accounts[sender]["country"],
+
+        "receiver_country": (
+            accounts.get(
+                receiver,
+                {"country": random.choice(COUNTRIES)}
+            )["country"]
         )
     }
 
-# 1. Normal Transactions
+# Normal Transactions
 
-def generate_normal_transactions(number=500):
+def generate_normal_transactions(
+    accounts,
+    number=NORMAL_TRANSACTION_COUNT
+):
+
     transactions = []
+
+    account_ids = list(accounts.keys())
 
     for _ in range(number):
 
-        sender, receiver = random.sample(ACCOUNTS, 2)
+        sender, receiver = random.sample(
+            account_ids,
+            2
+        )
 
-        amount = random.uniform(100, 5000)
+        amount = random.uniform(
+            100,
+            5000
+        )
 
         transaction = generate_transaction(
             sender,
             receiver,
             amount,
-            "NORMAL"
+            "NORMAL",
+            accounts
         )
 
         transactions.append(transaction)
 
     return transactions
 
-# 2. Starburst Pattern
+# Starburst Pattern
 
-def generate_starburst_transactions(number=50):
+def generate_starburst_transactions(
+    accounts,
+    number=STARBURST_ACCOUNT_COUNT
+):
 
     transactions = []
 
+    shell_account = "SHELL001"
+
     suspicious_accounts = random.sample(
-        ACCOUNTS,
+        list(accounts.keys()),
         number
     )
 
     for account in suspicious_accounts:
 
+        amount = random.uniform(
+            9500,
+            9900
+        )
+
         transaction = generate_transaction(
             account,
-            SHELL_ACCOUNT,
-            9900,
-            "STARBURST"
+            shell_account,
+            amount,
+            "STARBURST",
+            accounts
         )
 
         transactions.append(transaction)
 
     return transactions
 
-# 3. Circular Money Flow
+# Circular Money Flow
 
-def generate_circular_transactions():
+def generate_circular_transactions(accounts):
 
     transactions = []
 
-    # A → B → C → A
-
-    accounts = random.sample(ACCOUNTS, 3)
-
-    account_a = accounts[0]
-    account_b = accounts[1]
-    account_c = accounts[2]
+    account_a, account_b, account_c = random.sample(
+        list(accounts.keys()),
+        3
+    )
 
     transactions.append(
         generate_transaction(
             account_a,
             account_b,
-            8500,
-            "CIRCULAR"
+            random.uniform(7000, 9000),
+            "CIRCULAR",
+            accounts
         )
     )
 
@@ -109,8 +186,9 @@ def generate_circular_transactions():
         generate_transaction(
             account_b,
             account_c,
-            8200,
-            "CIRCULAR"
+            random.uniform(7000, 9000),
+            "CIRCULAR",
+            accounts
         )
     )
 
@@ -118,17 +196,19 @@ def generate_circular_transactions():
         generate_transaction(
             account_c,
             account_a,
-            7900,
-            "CIRCULAR"
+            random.uniform(7000, 9000),
+            "CIRCULAR",
+            accounts
         )
     )
 
     return transactions
 
-# 4. Smurfing Pattern
+# Smurfing Pattern
 
 def generate_smurfing_transactions(
-    number=30
+    accounts,
+    number=SMURFING_ACCOUNT_COUNT
 ):
 
     transactions = []
@@ -136,7 +216,7 @@ def generate_smurfing_transactions(
     target_account = "SMURF_TARGET"
 
     suspicious_accounts = random.sample(
-        ACCOUNTS,
+        list(accounts.keys()),
         number
     )
 
@@ -151,14 +231,15 @@ def generate_smurfing_transactions(
             account,
             target_account,
             amount,
-            "SMURFING"
+            "SMURFING",
+            accounts
         )
 
         transactions.append(transaction)
 
     return transactions
 
-# Save Transactions
+# Save Dataset
 
 def save_transactions(transactions):
 
@@ -170,6 +251,7 @@ def save_transactions(transactions):
         "amount",
         "transaction_type",
         "sender_ip",
+        "sender_country",
         "receiver_country"
     ]
 
@@ -189,26 +271,69 @@ def save_transactions(transactions):
 
         writer.writerows(transactions)
 
-# Main Program
+# Generate Summary
+
+def print_summary(transactions):
+
+    counts = {}
+
+    total_amount = 0
+
+    for transaction in transactions:
+
+        transaction_type = transaction[
+            "transaction_type"
+        ]
+
+        counts[transaction_type] = (
+            counts.get(transaction_type, 0) + 1
+        )
+
+        total_amount += transaction["amount"]
+
+    print()
+    print("Transaction Summary")
+    print("-------------------")
+
+    for transaction_type, count in counts.items():
+
+        print(
+            f"{transaction_type}: {count}"
+        )
+
+    print(
+        f"Total transactions: {len(transactions)}"
+    )
+
+    print(
+        f"Total transaction value: "
+        f"₹{total_amount:,.2f}"
+    )
+
+# Main
 
 def main():
 
-    print("Generating FinGraph transaction data...")
+    print(
+        "Generating FinGraph transaction network..."
+    )
+
+    accounts = create_account_profiles()
 
     normal_transactions = (
-        generate_normal_transactions(500)
+        generate_normal_transactions(accounts)
     )
 
     starburst_transactions = (
-        generate_starburst_transactions(50)
+        generate_starburst_transactions(accounts)
     )
 
     circular_transactions = (
-        generate_circular_transactions()
+        generate_circular_transactions(accounts)
     )
 
     smurfing_transactions = (
-        generate_smurfing_transactions(30)
+        generate_smurfing_transactions(accounts)
     )
 
     transactions = (
@@ -222,18 +347,12 @@ def main():
 
     save_transactions(transactions)
 
+    print_summary(transactions)
+
     print()
-    print("FinGraph dataset generated successfully!")
-    print()
-    print(f"Total transactions: {len(transactions)}")
-    print()
-    print("Transaction breakdown:")
-    print(f"Normal: {len(normal_transactions)}")
-    print(f"Starburst: {len(starburst_transactions)}")
-    print(f"Circular: {len(circular_transactions)}")
-    print(f"Smurfing: {len(smurfing_transactions)}")
-    print()
-    print(f"Saved to: {OUTPUT_FILE}")
+    print(
+        f"Dataset saved to: {OUTPUT_FILE}"
+    )
 
 
 if __name__ == "__main__":
