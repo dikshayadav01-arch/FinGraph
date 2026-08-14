@@ -1,7 +1,5 @@
 import csv
-import json
 import random
-import time
 import uuid
 from datetime import datetime, timedelta
 
@@ -312,37 +310,6 @@ def print_summary(transactions):
         f"₹{total_amount:,.2f}"
     )
 
-# Simulate Real-Time Transaction Stream
-
-def stream_transactions(transactions, delay=0.5):
-
-    print()
-    print("Starting FinGraph transaction stream...")
-    print("Press Ctrl+C to stop.")
-    print()
-
-    try:
-
-        for transaction in transactions:
-
-            message = json.dumps(transaction)
-
-            print(
-                f"STREAM → "
-                f"{transaction['sender']} → "
-                f"{transaction['receiver']} | "
-                f"₹{transaction['amount']}"
-            )
-
-            print(message)
-
-            time.sleep(delay)
-
-    except KeyboardInterrupt:
-
-        print()
-        print("Transaction stream stopped.")
-
 # Main
 
 def main():
@@ -386,12 +353,6 @@ def main():
     print(
         f"Dataset saved to: {OUTPUT_FILE}"
     )
-
-    stream_transactions(
-        transactions[:20],
-        delay=0.5
-    )
-
 
 if __name__ == "__main__":
     main()
