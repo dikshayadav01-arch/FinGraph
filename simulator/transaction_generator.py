@@ -1,4 +1,5 @@
 import csv
+import json
 import random
 import uuid
 from datetime import datetime, timedelta
@@ -12,6 +13,7 @@ STARBURST_ACCOUNT_COUNT = 50
 SMURFING_ACCOUNT_COUNT = 30
 
 OUTPUT_FILE = "data/raw/transactions.csv"
+JSON_OUTPUT_FILE = "data/processed/transactions.jsonl"
 
 COUNTRIES = [
     "India",
@@ -271,6 +273,23 @@ def save_transactions(transactions):
 
         writer.writerows(transactions)
 
+# Save Transactions as JSON Lines
+
+def save_transactions_jsonl(transactions):
+
+    with open(
+        JSON_OUTPUT_FILE,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        for transaction in transactions:
+
+            file.write(
+                json.dumps(transaction)
+                + "\n"
+            )        
+
 # Generate Summary
 
 def print_summary(transactions):
@@ -347,11 +366,17 @@ def main():
 
     save_transactions(transactions)
 
+    save_transactions_jsonl(transactions)
+
     print_summary(transactions)
 
     print()
     print(
-        f"Dataset saved to: {OUTPUT_FILE}"
+     f"CSV dataset saved to: {OUTPUT_FILE}"
+    )
+
+    print(
+       f"JSONL dataset saved to: {JSON_OUTPUT_FILE}"
     )
 
 if __name__ == "__main__":
