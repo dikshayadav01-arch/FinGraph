@@ -2,8 +2,23 @@ import argparse
 import json
 import time
 
+from kafka import KafkaProducer
+
 
 INPUT_FILE = "data/processed/transactions.jsonl"
+
+KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_TOPIC = "fin_transactions"
+
+
+def create_kafka_producer():
+
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        value_serializer=lambda value: json.dumps(value).encode("utf-8")
+    )
+
+    return producer
 
 
 def load_transactions():
@@ -30,6 +45,7 @@ def load_transactions():
 
 
 def stream_transactions(
+    producer,
     transactions,
     limit=None,
     delay=0.5
@@ -40,7 +56,8 @@ def stream_transactions(
         transactions = transactions[:limit]
 
     print()
-    print("Starting FinGraph transaction stream...")
+    print("Starting FinGraph Kafka transaction stream...")
+    print(f"Kafka topic: {KAFKA_TOPIC}")
     print(f"Transactions to stream: {len(transactions)}")
     print(f"Delay between transactions: {delay} seconds")
     print("Press Ctrl+C to stop.")
@@ -50,7 +67,10 @@ def stream_transactions(
 
         for transaction in transactions:
 
-            message = json.dumps(transaction)
+            producer.send(
+                KAFKA_TOPIC,
+                value=transaction
+            )
 
             print(
                 f"STREAM → "
@@ -59,11 +79,16 @@ def stream_transactions(
                 f"₹{transaction['amount']:.2f}"
             )
 
-            print(message)
-
             time.sleep(delay)
 
+        producer.flush()
+
+        print()
+        print("All transactions sent to Kafka.")
+
     except KeyboardInterrupt:
+
+        producer.flush()
 
         print()
         print("Transaction stream stopped.")
@@ -72,7 +97,7 @@ def stream_transactions(
 def parse_arguments():
 
     parser = argparse.ArgumentParser(
-        description="FinGraph transaction stream producer"
+        description="FinGraph Kafka transaction producer"
     )
 
     parser.add_argument(
@@ -96,6 +121,12 @@ def main():
 
     args = parse_arguments()
 
+    print("Connecting to Kafka...")
+
+    producer = create_kafka_producer()
+
+    print("Connected to Kafka successfully.")
+
     transactions = load_transactions()
 
     print(
@@ -104,10 +135,13 @@ def main():
     )
 
     stream_transactions(
+        producer,
         transactions,
         limit=args.limit,
         delay=args.delay
     )
+
+    producer.close()
 
 
 if __name__ == "__main__":
