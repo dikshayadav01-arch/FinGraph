@@ -63,28 +63,55 @@ def stream_transactions(
     print("Press Ctrl+C to stop.")
     print()
 
+    successful = 0
+    failed = 0
+
     try:
 
         for transaction in transactions:
 
-            producer.send(
+            future = producer.send(
                 KAFKA_TOPIC,
                 value=transaction
             )
 
-            print(
-                f"STREAM → "
-                f"{transaction['sender']} → "
-                f"{transaction['receiver']} | "
-                f"₹{transaction['amount']:.2f}"
-            )
+            try:
+
+                metadata = future.get(timeout=10)
+
+                successful += 1
+
+                print(
+                    f"KAFKA ✓ "
+                    f"{transaction['sender']} → "
+                    f"{transaction['receiver']} | "
+                    f"partition={metadata.partition} "
+                    f"offset={metadata.offset}"
+                )
+
+            except Exception as error:
+
+                failed += 1
+
+                print(
+                    f"KAFKA ✗ Failed to send "
+                    f"{transaction['transaction_id']}"
+                )
+
+                print(f"Error: {error}")
 
             time.sleep(delay)
 
         producer.flush()
 
         print()
-        print("All transactions sent to Kafka.")
+        print("------------------------------")
+        print("Kafka Stream Summary")
+        print("------------------------------")
+        print(f"Successful: {successful}")
+        print(f"Failed:     {failed}")
+        print(f"Total:      {successful + failed}")
+        print("------------------------------")
 
     except KeyboardInterrupt:
 
