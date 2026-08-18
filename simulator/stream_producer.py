@@ -5,18 +5,30 @@ import time
 from kafka import KafkaProducer
 
 
+# -----------------------------
+# FinGraph Kafka Configuration
+# -----------------------------
+
 INPUT_FILE = "data/processed/transactions.jsonl"
 
 KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
 KAFKA_TOPIC = "fin_transactions"
 
+# Producer configuration
+KAFKA_ACKS = "all"
+KAFKA_RETRIES = 5
+KAFKA_REQUEST_TIMEOUT_MS = 10000
+
 
 def create_kafka_producer():
 
     producer = KafkaProducer(
-        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        value_serializer=lambda value: json.dumps(value).encode("utf-8")
-    )
+    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+    acks=KAFKA_ACKS,
+    retries=KAFKA_RETRIES,
+    request_timeout_ms=KAFKA_REQUEST_TIMEOUT_MS,
+    value_serializer=lambda value: json.dumps(value).encode("utf-8")
+)
 
     return producer
 
@@ -147,6 +159,14 @@ def parse_arguments():
 def main():
 
     args = parse_arguments()
+
+    print("--------------------------------")
+    print("FinGraph Kafka Producer")
+    print("--------------------------------")
+    print(f"Kafka server: {KAFKA_BOOTSTRAP_SERVERS}")
+    print(f"Kafka topic:  {KAFKA_TOPIC}")
+    print(f"Input file:   {INPUT_FILE}")
+    print("--------------------------------")
 
     print("Connecting to Kafka...")
 
