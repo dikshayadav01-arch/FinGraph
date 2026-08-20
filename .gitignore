@@ -5,3 +5,5 @@ __pycache__/
 .vscode/
 data/raw/*
 data/processed/*
+flink_jobs/target/
+flink_jobs/target/
