@@ -14,6 +14,9 @@ public class KafkaFlinkProcessor {
         StreamExecutionEnvironment env =
                 StreamExecutionEnvironment.getExecutionEnvironment();
 
+        // Enable checkpointing for fault tolerance
+        env.enableCheckpointing(10000);
+
         KafkaSource<String> source = KafkaSource.<String>builder()
                 .setBootstrapServers("172.19.176.1:9092")
                 .setTopics("fin_transactions")
@@ -32,4 +35,6 @@ public class KafkaFlinkProcessor {
 
         env.execute("FinGraph Kafka Transaction Processor");
     }
+
 }
+
