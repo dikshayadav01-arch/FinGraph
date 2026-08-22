@@ -6,6 +6,8 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fingraph.model.Transaction;
 
 public class KafkaFlinkProcessor {
 
@@ -31,7 +33,12 @@ public class KafkaFlinkProcessor {
                 "FinGraph Kafka Source"
         );
 
-        transactions.print();
+        DataStream<Transaction> parsedTransactions = transactions.map(json -> {
+                     ObjectMapper mapper = new ObjectMapper();
+                     return mapper.readValue(json, Transaction.class);
+                   });
+
+        parsedTransactions.print();
 
         env.execute("FinGraph Kafka Transaction Processor");
     }

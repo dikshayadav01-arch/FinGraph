@@ -11,7 +11,7 @@ from kafka import KafkaProducer
 
 INPUT_FILE = "data/processed/transactions.jsonl"
 
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_BOOTSTRAP_SERVERS = "172.19.176.1:9092"
 KAFKA_TOPIC = "fin_transactions"
 
 # Producer configuration
