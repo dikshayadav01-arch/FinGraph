@@ -38,7 +38,11 @@ public class KafkaFlinkProcessor {
                      return mapper.readValue(json, Transaction.class);
                    });
 
-        parsedTransactions.print();
+        parsedTransactions
+           .map(transaction ->
+                transaction + " | FRAUD_STATUS=" +
+                FraudClassifier.classify(transaction))
+           .print();
 
         env.execute("FinGraph Kafka Transaction Processor");
     }
