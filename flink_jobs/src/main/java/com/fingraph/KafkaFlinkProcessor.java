@@ -8,6 +8,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fingraph.model.Transaction;
+import com.fingraph.model.FraudEvent;
 
 public class KafkaFlinkProcessor {
 
@@ -38,11 +39,18 @@ public class KafkaFlinkProcessor {
                      return mapper.readValue(json, Transaction.class);
                    });
 
-        parsedTransactions
-           .map(transaction ->
-                transaction + " | FRAUD_STATUS=" +
-                FraudClassifier.classify(transaction))
-           .print();
+        DataStream<FraudEvent> fraudEvents = parsedTransactions.map(transaction ->
+                new FraudEvent(
+                       transaction.getTransaction_id(),
+                       transaction.getSender(),
+                       transaction.getReceiver(),
+                       transaction.getAmount(),
+                       transaction.getTransaction_type(),
+                       FraudClassifier.classify(transaction)
+        )
+);
+
+        fraudEvents.print();
 
         env.execute("FinGraph Kafka Transaction Processor");
     }
