@@ -50,7 +50,12 @@ public class KafkaFlinkProcessor {
         )
 );
 
-        fraudEvents.print();
+        DataStream<FraudEvent> suspiciousEvents = fraudEvents
+                   .filter(event ->
+                          "SUSPICIOUS".equalsIgnoreCase(event.getFraud_status())
+                   );
+
+        suspiciousEvents.print("FRAUD ALERT");
 
         env.execute("FinGraph Kafka Transaction Processor");
     }
