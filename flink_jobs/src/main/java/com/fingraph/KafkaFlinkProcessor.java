@@ -9,6 +9,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fingraph.model.Transaction;
 import com.fingraph.model.FraudEvent;
+import com.fingraph.model.GraphTransaction;
 
 public class KafkaFlinkProcessor {
 
@@ -55,12 +56,19 @@ public class KafkaFlinkProcessor {
                           "SUSPICIOUS".equalsIgnoreCase(event.getFraud_status())
                    );
 
-        fraudEvents
-             .map(event ->
-                  event + " | RISK_LEVEL=" +
-                  RiskScorer.calculateRisk(event)
-             )
-             .print("RISK EVENT");
+        DataStream<GraphTransaction> graphTransactions = fraudEvents.map(event ->
+           new GraphTransaction(
+                event.getTransaction_id(),
+                event.getSender(),
+                event.getReceiver(),
+                event.getAmount(),
+                event.getTransaction_type(),
+                event.getFraud_status(),
+                RiskScorer.calculateRisk(event)
+        )
+);
+
+        graphTransactions.print("GRAPH TRANSACTION");
 
         env.execute("FinGraph Kafka Transaction Processor");
     }
