@@ -68,7 +68,19 @@ public class KafkaFlinkProcessor {
         )
 );
 
-        graphTransactions.print("GRAPH TRANSACTION");
+        //graphTransactions
+          // .filter(event ->
+            //    "SUSPICIOUS".equalsIgnoreCase(event.getFraudStatus())
+        //)
+          // .addSink(new Neo4jSink())
+           //.name("Neo4j Graph Sink");
+
+            graphTransactions
+    .filter(event ->
+        "SUSPICIOUS".equalsIgnoreCase(event.getFraudStatus())
+    )
+    .print()
+    .name("Fraud Event Output");
 
         env.execute("FinGraph Kafka Transaction Processor");
     }
