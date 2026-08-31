@@ -25,13 +25,11 @@ public class Neo4jWriter implements AutoCloseable {
                     """
                     MERGE (sender:Account {id: $sender})
                     MERGE (receiver:Account {id: $receiver})
-                    CREATE (sender)-[:SENT {
-                        transactionId: $transactionId,
-                        amount: $amount,
-                        transactionType: $transactionType,
-                        fraudStatus: $fraudStatus,
-                        riskLevel: $riskLevel
-                    }]->(receiver)
+                    MERGE (sender)-[tx:SENT {transactionId: $transactionId}]->(receiver)
+                    SET tx.amount = $amount,
+                        tx.transactionType = $transactionType,
+                        tx.fraudStatus = $fraudStatus,
+                        tx.riskLevel = $riskLevel
                     """,
                     org.neo4j.driver.Values.parameters(
                             "sender", transaction.getSender(),
