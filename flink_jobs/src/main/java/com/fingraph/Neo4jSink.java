@@ -14,8 +14,12 @@ public class Neo4jSink extends RichSinkFunction<GraphTransaction> {
         String password = System.getenv("NEO4J_PASSWORD");
 
         if (password == null || password.isEmpty()) {
+            password = System.getProperty("NEO4J_PASSWORD");
+        }
+
+        if (password == null || password.isEmpty()) {
             throw new IllegalStateException(
-                    "NEO4J_PASSWORD environment variable is not set."
+                 "NEO4J_PASSWORD is not available."
             );
         }
 
